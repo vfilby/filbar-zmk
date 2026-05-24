@@ -1,0 +1,11 @@
+# GitHub Actions build matrix.
+# Both halves use the splitkb_aurora_corne shield, plus nice_view adapter + display.
+# settings_reset is a separate firmware you flash temporarily to wipe BT pairings.
+
+include:
+  - board: nice_nano_v2
+    shield: splitkb_aurora_corne_left nice_view_adapter nice_view
+  - board: nice_nano_v2
+    shield: splitkb_aurora_corne_right nice_view_adapter nice_view
+  - board: nice_nano_v2
+    shield: settings_reset

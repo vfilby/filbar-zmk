@@ -1,0 +1,10 @@
+/*
+ * Override nice!view CS pin for the LEFT half only.
+ *
+ * Default nice_view_adapter routes CS to D1 (P0.17).
+ * Our left half has D1 unavailable, so the CS line was bodged to D4 (P0.22).
+ */
+
+&nice_view_spi {
+    cs-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+};
