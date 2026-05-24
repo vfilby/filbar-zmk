@@ -3,9 +3,9 @@
 # settings_reset is a separate firmware you flash temporarily to wipe BT pairings.
 
 include:
-  - board: nice_nano_v2
+  - board: nice_nano//zmk
     shield: splitkb_aurora_corne_left nice_view_adapter nice_view
-  - board: nice_nano_v2
+  - board: nice_nano//zmk
     shield: splitkb_aurora_corne_right nice_view_adapter nice_view
-  - board: nice_nano_v2
+  - board: nice_nano//zmk
     shield: settings_reset
