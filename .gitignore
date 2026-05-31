@@ -1,11 +1,13 @@
-.west/
-zephyr/
-zmk/
-modules/
-bootloader/
-tools/
-optional/
-build/
-firmware/
-.west-workspace/
+# West workspace dirs (root-anchored so they don't match like-named subdirs,
+# e.g. rgb_indicator/zephyr/).
+/.west/
+/zephyr/
+/zmk/
+/modules/
+/bootloader/
+/tools/
+/optional/
+/build/
+/firmware/
+/.west-workspace/
 .DS_Store

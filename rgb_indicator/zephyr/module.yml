@@ -1,0 +1,4 @@
+name: rgb_indicator
+build:
+  cmake: .
+  kconfig: Kconfig

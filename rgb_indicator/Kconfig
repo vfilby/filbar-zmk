@@ -1,0 +1,18 @@
+config RGB_INDICATOR
+    bool "Custom per-key RGB layer indicator"
+    depends on LED_STRIP
+    default n
+    help
+      Drives the per-key SK6812 chain directly (via the Zephyr led_strip API)
+      for layer-based indication. Mutually exclusive in practice with ZMK's
+      own RGB underglow driver, which should be disabled so there is only one
+      writer to the strip.
+
+config RGB_INDICATOR_MAP_MODE
+    bool "LED chain mapping mode (walking dot)"
+    depends on RGB_INDICATOR
+    default n
+    help
+      Temporary diagnostic: light one LED at a time (index 0 = blue anchor,
+      others red), advancing ~1.5s, looping. Used once to discover the
+      physical chain index -> key mapping. Turn off for normal operation.

@@ -1,59 +1,270 @@
 /*
- * Default ZMK keymap for splitkb Aurora Corne.
- * Copied verbatim from app/boards/shields/splitkb_aurora_corne/splitkb_aurora_corne.keymap.
- * Tweak after the first successful flash.
+ * filbar Corne keymap, adapted from the QMK userspace
+ * (filbar-scylla/keyboards/crkbd/rev4_1/standard/keymaps/filbar).
+ *
+ * SCOPE (first pass): layer layouts only. Intentionally NOT ported yet:
+ *   - Achordion bilateral-combo logic (home-row mods use a simple hold-tap here)
+ *   - Swapper (SW_APP/SW_WIN -> plain Cmd-Tab / Cmd-`)
+ *   - Caps Word tweaks, combos, custom RGB layer indicators
+ *
+ * LAYOUT NOTE: the QMK keymap targets a 3x6_3_ex2 board (2 extra keys per
+ * half). This Aurora Corne is a plain 42-key 3x6_3, so those 4 middle keys are
+ * dropped. Their casualties: PgUp/PgDn (were on NAV aux keys), mouse wheel
+ * (MOUSE aux keys), and the L_FUNC/L_SPECIAL layer-access keys. To reach the
+ * FUNCTION layer we instead use a conditional layer: hold NAV + SYM together.
  */
 
 #include <behaviors.dtsi>
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/bt.h>
+#include <dt-bindings/zmk/outputs.h>
+#include <dt-bindings/zmk/pointing.h>
+
+#define COLEMAK 0
+#define QWERTY  1
+#define NUM     2
+#define NAV     3
+#define MOUSE   4
+#define SYM     5
+#define MEDIA   6
+#define FN      7
+#define CONF    8
 
 / {
-        keymap {
-                compatible = "zmk,keymap";
-
-                default_layer {
-                        display-name = "Default Layer";
-// -----------------------------------------------------------------------------------------
-// |  TAB |  Q  |  W  |  E  |  R  |  T  |   |  Y  |  U   |  I  |  O  |  P  | BSPC |
-// | CTRL |  A  |  S  |  D  |  F  |  G  |   |  H  |  J   |  K  |  L  |  ;  |  '   |
-// | SHFT |  Z  |  X  |  C  |  V  |  B  |   |  N  |  M   |  ,  |  .  |  /  | ESC  |
-//                    | GUI | LWR | SPC |   | ENT | RSE  | ALT |
-                        bindings = <
-   &kp TAB   &kp Q &kp W &kp E &kp R &kp T   &kp Y &kp U  &kp I     &kp O   &kp P    &kp BSPC
-   &kp LCTRL &kp A &kp S &kp D &kp F &kp G   &kp H &kp J  &kp K     &kp L   &kp SEMI &kp SQT
-   &kp LSHFT &kp Z &kp X &kp C &kp V &kp B   &kp N &kp M  &kp COMMA &kp DOT &kp FSLH &kp ESC
-                  &kp LGUI &mo 1 &kp SPACE   &kp RET &mo 2 &kp RALT
-                        >;
-                };
-                lower_layer {
-                        display-name = "Lower Layer";
-// -----------------------------------------------------------------------------------------
-// |  TAB |  1  |  2  |  3  |  4  |  5  |   |  6  |  7  |  8  |  9  |  0  | BSPC |
-// | BTCLR| BT1 | BT2 | BT3 | BT4 | BT5 |   | LFT | DWN |  UP | RGT |     |      |
-// | SHFT |     |     |     |     |     |   |     |     |     |     |     |      |
-//                    | GUI |     | SPC |   | ENT |     | ALT |
-                        bindings = <
-   &kp TAB    &kp N1       &kp N2       &kp N3       &kp N4       &kp N5         &kp N6   &kp N7   &kp N8 &kp N9    &kp N0 &kp BSPC
-   &bt BT_CLR &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &bt BT_SEL 4   &kp LEFT &kp DOWN &kp UP &kp RIGHT &trans &trans
-   &kp LSHFT  &trans       &trans       &trans       &trans       &trans         &trans   &trans   &trans &trans    &trans &trans
-                                    &kp LGUI     &trans       &kp SPACE      &kp RET  &trans   &kp RALT
-                        >;
-                };
-
-                raise_layer {
-                        display-name = "Raise Layer";
-// -----------------------------------------------------------------------------------------
-// |  TAB |  !  |  @  |  #  |  $  |  %  |   |  ^  |  &  |  *  |  (  |  )  | BSPC |
-// | CTRL |     |     |     |     |     |   |  -  |  =  |  [  |  ]  |  \  |  `   |
-// | SHFT |     |     |     |     |     |   |  _  |  +  |  {  |  }  | "|" |  ~   |
-//                    | GUI |     | SPC |   | ENT |     | ALT |
-                        bindings = <
-   &kp  TAB  &kp EXCL &kp AT &kp HASH &kp DLLR &kp PRCNT   &kp CARET &kp AMPS  &kp ASTRK &kp LPAR &kp RPAR &kp BSPC
-   &kp LCTRL &trans   &trans &trans   &trans   &trans      &kp MINUS &kp EQUAL &kp LBKT  &kp RBKT &kp BSLH &kp GRAVE
-   &kp LSHFT &trans   &trans &trans   &trans   &trans      &kp UNDER &kp PLUS  &kp LBRC  &kp RBRC &kp PIPE &kp TILDE
-                             &kp LGUI &trans   &kp SPACE   &kp RET   &trans    &kp RALT
-                        >;
-                };
+    behaviors {
+        // Home-row mod: hold = modifier, tap = key.
+        //
+        // Tuning priorities (per build notes):
+        //   1. STREAK SUPPRESSION (avoid accidental mods mid-typing, e.g.
+        //      "streak" -> "strAk") => require-prior-idle-ms. Raise this if
+        //      misfires persist; lower it if deliberate mods feel sluggish
+        //      right after typing. Trade-off: too high also forces the 2nd key
+        //      of a fast mod *chord* to a tap.
+        //   2. CHAINED MODS (Cmd+Shift+x etc.) => kept working by NOT using
+        //      positional/bilateral restriction and by "balanced" flavor.
+        // This is the ZMK stand-in for QMK achordion's streak handling.
+        hm: homerow_mods {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <200>;
+            quick-tap-ms = <175>;
+            require-prior-idle-ms = <150>;
+            // NOTE: retro-tap intentionally NOT enabled. It would emit a stray
+            // letter whenever a home-row mod is held for an EXTERNAL mouse click
+            // (Cmd-click etc.) and released, because ZMK can't see the mouse
+            // event. To type these letters, tap them; holding alone = mod only.
+            bindings = <&kp>, <&kp>;
         };
+
+        // Auto-shift: tap = key, hold-past-term = its shifted form. Used only
+        // on the NUMBER layer's character keys (digits/brackets/etc.), invoked
+        // as `&as <shifted> <base>`. "tap-preferred" => a roll never shifts;
+        // only a deliberate hold past tapping-term does, so fast number entry
+        // stays clean. (Not on the alpha layers by design.)
+        as: auto_shift {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <175>;
+            quick-tap-ms = <175>;
+            bindings = <&kp>, <&kp>;
+        };
+    };
+
+    conditional_layers {
+        compatible = "zmk,conditional-layers";
+        // NAV (left thumb) + SYM (right thumb) -> FUNCTION (F-keys).
+        // Replaces the QMK L_FUNC aux key, which this board doesn't have.
+        function_layer {
+            if-layers = <NAV SYM>;
+            then-layer = <FN>;
+        };
+    };
+
+    /*
+     * Combos. NOTE: ZMK combos are POSITION-based, not keycode-based like QMK.
+     * Positions (42-key Corne):
+     *   row0  0  1  2  3  4  5   |  6  7  8  9 10 11
+     *   row1 12 13 14 15 16 17   | 18 19 20 21 22 23
+     *   row2 24 25 26 27 28 29   | 30 31 32 33 34 35
+     *   thmb       36 37 38      | 39 40 41
+     * Scoped to the base layers so they don't fire on NUM/SYM/etc. The copy/
+     * paste/enter combos carry require-prior-idle so they don't trigger while
+     * typing words that happen to contain those letters.
+     */
+    combos {
+        compatible = "zmk,combos";
+
+        // Q W F P  ->  macOS screenshot-to-clipboard (Cmd+Shift+Ctrl+4)
+        combo_screenshot {
+            timeout-ms = <50>;
+            key-positions = <1 2 3 4>;
+            bindings = <&kp LG(LS(LC(N4)))>;
+            layers = <COLEMAK QWERTY>;
+        };
+
+        // A R S (left home row)  ->  Cmd+C
+        combo_copy {
+            timeout-ms = <50>;
+            require-prior-idle-ms = <100>;
+            key-positions = <13 14 15>;
+            bindings = <&kp LG(C)>;
+            layers = <COLEMAK QWERTY>;
+        };
+
+        // R S T (left home row)  ->  Cmd+V
+        combo_paste {
+            timeout-ms = <50>;
+            require-prior-idle-ms = <100>;
+            key-positions = <14 15 16>;
+            bindings = <&kp LG(V)>;
+            layers = <COLEMAK QWERTY>;
+        };
+
+        // Z + D  ->  Enter
+        combo_enter {
+            timeout-ms = <50>;
+            require-prior-idle-ms = <100>;
+            key-positions = <25 28>;
+            bindings = <&kp RET>;
+            layers = <COLEMAK QWERTY>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        colemak_layer {
+            display-name = "COLEMAK";
+// ------------------------------------------------------------------------------------------
+// | ESC  |  Q  |  W  |  F  |  P  | B/CFG|   |  J  |  L  |  U  |  Y  |  ;  | BSPC |
+// | TAB  | A/G | R/A | S/S | T/C |  G   |   |  M  | N/C | E/S | I/A | O/G |  '   |
+// | SHFT |  Z  |  X  |  C  |  D  |  V   |   |  K  |  H  |  ,  |  .  |  /  | SHFT |
+//                    | GUI |NAV/⌫|NUM/␣ |   |MED/⏎|SYM  |MOU/⇥|
+            bindings = <
+   &kp ESC    &kp Q       &kp W       &kp F       &kp P       &lt CONF B     &kp J     &kp L          &kp U       &kp Y       &kp SEMI    &kp BSPC
+   &kp TAB    &hm LGUI A  &hm LALT R  &hm LSFT S  &hm LCTRL T &kp G          &kp M     &hm RCTRL N    &hm RSFT E  &hm LALT I  &hm RGUI O  &kp SQT
+   &kp LSHFT  &kp Z       &kp X       &kp C       &kp D       &kp V          &kp K     &kp H          &kp COMMA   &kp DOT     &kp FSLH    &kp RSHFT
+                                      &kp LGUI    &lt NAV BSPC &lt NUM SPACE  &lt MEDIA RET &mo SYM    &lt MOUSE TAB
+            >;
+        };
+
+        qwerty_layer {
+            display-name = "QWERTY";
+// ------------------------------------------------------------------------------------------
+// | ESC  |  Q  |  W  |  E  |  R  | T/CFG|   |  Y  |  U  |  I  |  O  |  P  | BSPC |
+// | TAB  | A/G | S/A | D/S | F/C |  G   |   |  H  | J/C | K/S | L/A | ;/G |  '   |
+// | SHFT |  Z  |  X  |  C  |  V  |  B   |   |  N  |  M  |  ,  |  .  |  /  | SHFT |
+            bindings = <
+   &kp ESC    &kp Q       &kp W       &kp E       &kp R       &lt CONF T     &kp Y     &kp U          &kp I       &kp O       &kp P        &kp BSPC
+   &kp TAB    &hm LGUI A  &hm LALT S  &hm LSFT D  &hm LCTRL F &kp G          &kp H     &hm RCTRL J    &hm RSFT K  &hm LALT L  &hm RGUI SEMI &kp SQT
+   &kp LSHFT  &kp Z       &kp X       &kp C       &kp V       &kp B          &kp N     &kp M          &kp COMMA   &kp DOT     &kp FSLH     &kp RSHFT
+                                      &kp LGUI    &lt NAV BSPC &lt NUM SPACE  &lt MEDIA RET &mo SYM    &lt MOUSE TAB
+            >;
+        };
+
+        number_layer {
+            display-name = "NUMBER";
+// Auto-shift on the right cluster: tap = number/symbol, HOLD = shifted form.
+// ------------------------------------------------------------------------------------------
+// |SW_WIN|     |     |     |     |LOGOUT|   | [/{ | 7/& | 8/* | 9/( | ]/} | BSPC |
+// |SW_APP| GUI | ALT | SFT | CTL |      |   | ;/: | 4/$ | 5/% | 6/^ | =/+ |  '   |
+// |      |     |     |     |     |      |   |  ~  | 1/! | 2/@ | 3/# | \/| | SHFT |
+//                    |     |     |      |   | 0/) | -/_ | ./> |
+            bindings = <
+   &kp LG(GRAVE) &none    &none    &none    &none     &kp LG(LC(Q))   &as LBRC LBKT  &as AMPS N7  &as ASTRK N8 &as LPAR N9  &as RBRC RBKT &trans
+   &kp LG(TAB)   &kp LGUI &kp LALT &kp LSHFT &kp LCTRL &none           &as COLON SEMI &as DLLR N4  &as PRCNT N5 &as CARET N6 &as PLUS EQUAL &trans
+   &trans        &none    &none    &none    &none     &none           &kp TILDE      &as EXCL N1  &as AT N2    &as HASH N3  &as PIPE BSLH &trans
+                                   &trans   &trans    &trans          &as RPAR N0    &as UNDER MINUS &as GT DOT
+            >;
+        };
+
+        nav_layer {
+            display-name = "NAV";
+// ------------------------------------------------------------------------------------------
+// |      |     |     |     |     |      |   |     |TAB-L| UP  |TAB-R|     |      |
+// |      | GUI | ALT | SFT | CTL |      |   |LN-BG|LEFT |DOWN |RIGHT|LN-EN|      |
+// |      |     |     |     |     |      |   |     |WRD-L|     |WRD-R|     |      |
+            bindings = <
+   &none   &none    &none    &none    &none     &none      &none        &kp LG(LS(LBKT)) &kp UP   &kp LG(LS(RBKT)) &none        &none
+   &none   &kp LGUI &kp LALT &kp LSHFT &kp LCTRL &none     &kp LG(LEFT) &kp LEFT         &kp DOWN &kp RIGHT        &kp LG(RIGHT) &none
+   &none   &none    &none    &none    &none     &none      &none        &kp LA(LEFT)     &none    &kp LA(RIGHT)    &none        &none
+                                      &trans   &trans     &trans        &trans   &trans   &trans
+            >;
+        };
+
+        mouse_layer {
+            display-name = "MOUSE";
+// ------------------------------------------------------------------------------------------
+// |      |     |     | M-UP|     |      |   |     |     |     |     |     |      |
+// |      |     |M-LFT|M-DWN|M-RGT|      |   |     | CTL | SFT | ALT | GUI |      |
+// |      |     |     |     |     |      |   |     |     |     |     |     |      |
+//                    | MMB | RMB | LMB  |   |     |     |     |
+            bindings = <
+   &trans  &none    &none        &mmv MOVE_UP   &none          &none      &none  &none    &none    &none    &none    &none
+   &trans  &none    &mmv MOVE_LEFT &mmv MOVE_DOWN &mmv MOVE_RIGHT &none     &none  &kp RCTRL &kp RSHFT &kp RALT &kp RGUI &none
+   &trans  &none    &none        &none          &none          &none      &none  &none    &none    &none    &none    &none
+                                 &mkp MCLK      &mkp RCLK      &mkp LCLK   &trans &trans   &trans
+            >;
+        };
+
+        sym_layer {
+            display-name = "SYM";
+// ------------------------------------------------------------------------------------------
+// |  ~  |  !  |  @  |  #  |  $  |  %  |   |  ^  |  &  |  *  |  (  |  )  | BSPC |
+// |  `  | [/G | (/A | )/S | ]/C |C-B |   |  ~  |  "  |  '  |  -  |  _  |  \   |
+// |     |  <  |  {  |  }  |  >  |    |   |  /  |  !  | "|" |  :  |  ?  |  `   |
+            bindings = <
+   &kp TILDE &kp EXCL     &kp AT       &kp HASH     &kp DLLR     &kp PRCNT   &kp CARET &kp AMPS  &kp ASTRK &kp LPAR  &kp RPAR  &trans
+   &kp GRAVE &mt LGUI LBKT &mt LALT LPAR &mt LSHFT RPAR &mt LCTRL RBKT &kp LC(B) &kp TILDE &kp DQT   &kp SQT   &kp MINUS &kp UNDER &kp BSLH
+   &trans    &kp LT       &kp LBRC     &kp RBRC     &kp GT       &none       &kp FSLH  &kp EXCL  &kp PIPE  &kp COLON &kp QMARK &kp GRAVE
+                                       &trans       &kp BSPC     &trans      &trans    &trans    &trans
+            >;
+        };
+
+        media_layer {
+            display-name = "MEDIA";
+// ------------------------------------------------------------------------------------------
+// |      |     |     |     |     |      |   |     | VOL-|MUTE | VOL+|     |      |
+// |      |     |     |     |     |      |   |     | PREV| P/P | NEXT|     |      |
+// |      |     |     |     |     |      |   |     | BRI-|     | BRI+|     |      |
+            bindings = <
+   &none   &none    &none    &none    &none    &none      &none   &kp C_VOL_DN &kp C_MUTE &kp C_VOL_UP &none   &none
+   &none   &none    &none    &none    &none    &none      &none   &kp C_PREV   &kp C_PP   &kp C_NEXT   &none   &none
+   &none   &none    &none    &none    &none    &none      &none   &kp C_BRI_DN &none      &kp C_BRI_UP &none   &none
+                                      &none    &none    &none     &trans  &trans   &trans
+            >;
+        };
+
+        function_layer {
+            display-name = "FUNCTION";
+// ------------------------------------------------------------------------------------------
+// |      |     |     |     |     |      |   |PSCR | F7  | F8  | F9  | F12 |      |
+// |      | GUI | ALT | SFT | CTL |      |   |SCRL | F4  | F5  | F6  | F11 |      |
+// |      |     |     |     |     |      |   |PAUS | F1  | F2  | F3  | F10 |      |
+            bindings = <
+   &none   &none    &none    &none    &none     &none      &kp PSCRN       &kp F7 &kp F8 &kp F9 &kp F12 &none
+   &none   &kp LGUI &kp LALT &kp LSHFT &kp LCTRL &none     &kp SLCK        &kp F4 &kp F5 &kp F6 &kp F11 &none
+   &none   &none    &none    &none    &none     &none      &kp PAUSE_BREAK &kp F1 &kp F2 &kp F3 &kp F10 &none
+                                      &trans   &trans     &trans          &trans &trans &trans
+            >;
+        };
+
+        conf_layer {
+            display-name = "CONFIG";
+// ------------------------------------------------------------------------------------------
+// | BOOT |     |     |     |     |      |   |RESET|     |     |     |     | BOOT |
+// |BT CLR| BT0 | BT1 | BT2 | BT3 |      |   |     |     |     |     |     |      |
+// |BT NXT|BT PV| USB | BLE |     |      |   |     |     |     |     |     |      |
+//                    |     |     |      |   |     |QWRTY|CLMAK|
+// BOOT (left) resets the LEFT half into UF2 mode; BOOT (right) the RIGHT half.
+            bindings = <
+   &bootloader &none        &none        &none        &none        &none   &sys_reset &none &none &none &none &bootloader
+   &bt BT_CLR  &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &none   &none      &none &none &none &none &none
+   &bt BT_NXT  &bt BT_PRV   &out OUT_USB &out OUT_BLE  &none        &none   &none      &none &none &none &none &none
+                                         &trans       &trans       &trans  &trans     &to QWERTY &to COLEMAK
+            >;
+        };
+    };
 };

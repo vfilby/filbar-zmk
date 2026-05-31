@@ -26,3 +26,9 @@
 &nice_view_spi {
     cs-gpios = <&gpio1 15 GPIO_ACTIVE_HIGH>;
 };
+
+/* Per-key LED chain: 21 SK6812 per half (underglow LEDs bypassed via JP2).
+ * Shield default is a placeholder of 10. */
+&led_strip {
+    chain-length = <21>;
+};
