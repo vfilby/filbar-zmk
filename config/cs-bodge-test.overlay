@@ -1,0 +1,7 @@
+/*
+ * CS pin override for the Zephyr display sample test build.
+ * Targets the LEFT bodge (P0.22). Change to gpio1 15 if testing right.
+ */
+&nice_view_spi {
+    cs-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+};

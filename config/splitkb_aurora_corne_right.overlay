@@ -1,0 +1,28 @@
+/*
+ * Override nice!view CS pin for the RIGHT half.
+ *
+ * Default nice_view_adapter routes CS to D1 = pro_micro 1 = P0.06, which on the
+ * Aurora Corne carries the per-key RGB DATA line. With per-key RGB installed,
+ * D1 is unavailable, so the CS line is bodged to the unused encoder-B pad
+ * (ENC1_B = D18/A0 = pro_micro 18 = P1.15 = &gpio1 15).
+ *
+ * No matrix conflict: the right matrix uses pro_micro 4-9 (cols) and 10/14/15/16
+ * (rows); pro_micro 18 is not among them.
+ */
+
+/* The encoder's b-gpios is pro_micro 18 = P1.15, the same pin as our bodged CS;
+ * disable it so only the SPI CS claims that pin. */
+&right_encoder {
+    status = "disabled";
+};
+
+/* NOTE: no #if guard here. Shield Kconfig symbols (CONFIG_SHIELD_*) are NOT
+ * reliably defined during .overlay preprocessing, so an `#if IS_ENABLED(...)`
+ * guard silently evaluates false and the override is dropped. This file is only
+ * auto-included for the splitkb_aurora_corne_right shield, and our flashed builds
+ * always pair it with nice_view_adapter (which defines &nice_view_spi), so the
+ * unguarded reference is safe. Do NOT build the bare `right-oled` target with
+ * this present — &nice_view_spi won't exist there. */
+&nice_view_spi {
+    cs-gpios = <&gpio1 15 GPIO_ACTIVE_HIGH>;
+};

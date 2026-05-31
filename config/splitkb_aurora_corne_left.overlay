@@ -1,10 +1,25 @@
 /*
  * Override nice!view CS pin for the LEFT half only.
  *
- * Default nice_view_adapter routes CS to D1 (P0.17).
- * Our left half has D1 unavailable, so the CS line was bodged to D4 (P0.22).
+ * Default nice_view_adapter routes CS to D1 = pro_micro 1 = P0.06, which on the
+ * Aurora Corne carries the per-key RGB DATA line. With per-key RGB installed,
+ * D1 is unavailable, so the CS line is bodged to the unused encoder-A pad
+ * (ENC1_A = D4 = pro_micro 4 = P0.22).
  */
 
+/* The encoder shares P0.22 with our bodged CS; disable it so only the SPI CS
+ * claims that pin. (Safe regardless of CONFIG_EC11.) */
+&left_encoder {
+    status = "disabled";
+};
+
+/* NOTE: no #if guard here. Shield Kconfig symbols (CONFIG_SHIELD_*) are NOT
+ * reliably defined during .overlay preprocessing, so an `#if IS_ENABLED(...)`
+ * guard silently evaluates false and the override is dropped. This file is only
+ * auto-included for the splitkb_aurora_corne_left shield, and our flashed builds
+ * always pair it with nice_view_adapter (which defines &nice_view_spi), so the
+ * unguarded reference is safe. Do NOT build the bare `left-oled` target with
+ * this present — &nice_view_spi won't exist there. */
 &nice_view_spi {
     cs-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
 };

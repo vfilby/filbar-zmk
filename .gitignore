@@ -1,3 +1,11 @@
-.west-workspace/
+.west/
+zephyr/
+zmk/
+modules/
+bootloader/
+tools/
+optional/
 build/
 firmware/
+.west-workspace/
+.DS_Store
