@@ -256,14 +256,14 @@
             display-name = "CONFIG";
 // ------------------------------------------------------------------------------------------
 // | BOOT |     |     |     |     |      |   |RESET|     |     |     |     | BOOT |
-// |BT CLR| BT0 | BT1 | BT2 | BT3 |      |   |     |     |     |     |     |      |
+// |BT CLR| BT0 | BT1 | BT2 | BT3 | BT4  |   |     |     |     |     |     |      |
 // |BT NXT|BT PV| USB | BLE |     |      |   |     |     |     |     |     |      |
 //                    |     |     |      |   |     |QWRTY|CLMAK|
 // BOOT (left) resets the LEFT half into UF2 mode; BOOT (right) the RIGHT half.
             bindings = <
-   &bootloader &none        &none        &none        &none        &none   &sys_reset &none &none &none &none &bootloader
-   &bt BT_CLR  &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &none   &none      &none &none &none &none &none
-   &bt BT_NXT  &bt BT_PRV   &out OUT_USB &out OUT_BLE  &none        &none   &none      &none &none &none &none &none
+   &bootloader &none        &none        &none        &none        &none        &sys_reset &none &none &none &none &bootloader
+   &bt BT_CLR  &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &bt BT_SEL 4 &none      &none &none &none &none &none
+   &bt BT_NXT  &bt BT_PRV   &out OUT_USB &out OUT_BLE  &none        &none        &none      &none &none &none &none &none
                                          &trans       &trans       &trans  &trans     &to QWERTY &to COLEMAK
             >;
         };

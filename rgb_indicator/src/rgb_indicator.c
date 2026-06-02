@@ -107,7 +107,7 @@ static bool in_set(uint8_t pos, const uint8_t *set, size_t n) {
 /* CONFIG layer: keys that do something -> red. */
 static const uint8_t conf_active[] = {
     0,                          /* bootloader */
-    12, 13, 14, 15, 16,         /* BT_CLR, BT0..BT3 */
+    12, 13, 14, 15, 16, 17,     /* BT_CLR, BT0..BT4 */
     24, 25, 26, 27,             /* BT_NXT, BT_PRV, OUT_USB, OUT_BLE */
 };
 
