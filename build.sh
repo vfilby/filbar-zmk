@@ -59,7 +59,7 @@ else
     west build "${west_flags[@]+"${west_flags[@]}"}" -s zmk/app -d "build/$out" \
       -b "nice_nano//zmk" \
       -- -DZMK_CONFIG=/workspaces/zmk-config/config -DSHIELD="$shield" \
-         -DZMK_EXTRA_MODULES=/workspaces/zmk-config/rgb_indicator "$@"
+         -DZMK_EXTRA_MODULES="/workspaces/zmk-config/rgb_indicator;/workspaces/zmk-config/zmk-tri-state" "$@"
   uf2_src="$repo/build/$out/zephyr/zmk.uf2"
 fi
 

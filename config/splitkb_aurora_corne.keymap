@@ -4,8 +4,12 @@
  *
  * SCOPE (first pass): layer layouts only. Intentionally NOT ported yet:
  *   - Achordion bilateral-combo logic (home-row mods use a simple hold-tap here)
- *   - Swapper (SW_APP/SW_WIN -> plain Cmd-Tab / Cmd-`)
  *   - Caps Word tweaks, combos, custom RGB layer indicators
+ *
+ * PORTED since first pass:
+ *   - Swapper (SW_APP/SW_WIN) via the zmk-tri-state module (vendored at
+ *     ../zmk-tri-state, registered through build.sh ZMK_EXTRA_MODULES). See the
+ *     swap_app / swap_win behaviors below; bound on the NUMBER layer.
  *
  * LAYOUT NOTE: the QMK keymap targets a 3x6_3_ex2 board (2 extra keys per
  * half). This Aurora Corne is a plain 42-key 3x6_3, so those 4 middle keys are
@@ -72,6 +76,40 @@
             tapping-term-ms = <175>;
             quick-tap-ms = <175>;
             bindings = <&kp>, <&kp>;
+        };
+
+        // Swapper (QMK SW_APP / SW_WIN port) via the tri-state module.
+        // First tap holds LGUI and taps the cycle key; each repeat taps it
+        // again to keep cycling; the held mod is released ("committed") on
+        // interrupt. The interrupt is any key/layer NOT in the ignored lists.
+        //
+        // ignored-layers = <NUM>: while you HOLD space (= NUM layer) the
+        // switcher stays open. RELEASING space drops you to the base layer
+        // (a non-ignored layer change) -> fires the end binding -> Cmd up ->
+        // selection commits. This reproduces the QMK "hold space, release to
+        // pick" feel.
+        // ignored-key-positions = <0 12 15 24 35>: keys that must NOT interrupt
+        // the switcher. The check is purely position-based (raw physical key),
+        // so transparent keys still count by their own position.
+        //   0, 12  -> the two swapper keys, so re-tapping cycles
+        //   15     -> NUM-layer home-row LSHFT
+        //   24, 35 -> the dedicated bottom-row Shift keys (LSHFT/RSHFT). On NUM
+        //             these are &trans -> base-layer Shift; ignoring them lets
+        //             you HOLD Shift to reverse (Cmd+Shift+Tab / Cmd+Shift+`)
+        //             without committing the selection.
+        swap_app: swapper_app {            // Cmd+Tab  (switch applications)
+            compatible = "zmk,behavior-tri-state";
+            #binding-cells = <0>;
+            bindings = <&kt LGUI>, <&kp TAB>, <&kt LGUI>;
+            ignored-key-positions = <0 12 15 24 35>;
+            ignored-layers = <NUM>;
+        };
+        swap_win: swapper_win {            // Cmd+`    (switch windows in app)
+            compatible = "zmk,behavior-tri-state";
+            #binding-cells = <0>;
+            bindings = <&kt LGUI>, <&kp GRAVE>, <&kt LGUI>;
+            ignored-key-positions = <0 12 15 24 35>;
+            ignored-layers = <NUM>;
         };
 
     };
@@ -174,8 +212,8 @@
 // |      |     |     |     |     |      |   |  ~  | 1/! | 2/@ | 3/# | \/| | SHFT |
 //                    |     |     |      |   | 0/) | -/_ | ./> |
             bindings = <
-   &kp LG(GRAVE) &none    &none    &none    &none     &kp LG(LC(Q))   &as LBRC LBKT  &as AMPS N7  &as ASTRK N8 &as LPAR N9  &as RBRC RBKT &trans
-   &kp LG(TAB)   &kp LGUI &kp LALT &kp LSHFT &kp LCTRL &none           &as COLON SEMI &as DLLR N4  &as PRCNT N5 &as CARET N6 &as PLUS EQUAL &trans
+   &swap_win     &none    &none    &none    &none     &kp LG(LC(Q))   &as LBRC LBKT  &as AMPS N7  &as ASTRK N8 &as LPAR N9  &as RBRC RBKT &trans
+   &swap_app     &kp LGUI &kp LALT &kp LSHFT &kp LCTRL &none           &as COLON SEMI &as DLLR N4  &as PRCNT N5 &as CARET N6 &as PLUS EQUAL &trans
    &trans        &none    &none    &none    &none     &none           &kp TILDE      &as EXCL N1  &as AT N2    &as HASH N3  &as PIPE BSLH &trans
                                    &trans   &trans    &trans          &as RPAR N0    &as UNDER MINUS &as GT DOT
             >;
