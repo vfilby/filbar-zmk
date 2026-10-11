@@ -3,9 +3,11 @@
  * (filbar-scylla/keyboards/crkbd/rev4_1/standard/keymaps/filbar).
  *
  * SCOPE (first pass): layer layouts only. Intentionally NOT ported yet:
- *   - Caps Word tweaks, combos, custom RGB layer indicators
+ *   - custom RGB layer indicators
  *
  * PORTED since first pass:
+ *   - Smart Shift on the bottom-row Shift keys (hold = Shift, tap = one-shot
+ *     Shift, double-tap = Caps Word). See `sshft` below.
  *   - Achordion-style bilateral home-row mods via positional hold-tap
  *     (hml/hmr: hold-trigger-key-positions + hold-trigger-on-release).
  *   - Swapper (SW_APP/SW_WIN) via the zmk-tri-state module (vendored at
@@ -94,6 +96,54 @@
             tapping-term-ms = <175>;
             quick-tap-ms = <175>;
             bindings = <&kp>, <&kp>;
+        };
+
+        // Smart Shift, bound on the two bottom-row Shift keys (positions 24
+        // and 35). Capitals via the home-row Shift mods need the mod held
+        // across the whole letter press AND lose to require-prior-idle when
+        // typed fast (e.g. right after a space), so ordinary capitals live
+        // here instead:
+        //   hold         -> plain Shift (hold-preferred: resolves the instant
+        //                   another key is pressed, no tapping-term wait).
+        //   tap          -> one-shot Shift: the next key is shifted, then it
+        //                   drops. quick-release = it releases on the next
+        //                   key's PRESS, so a fast roll shifts one key only.
+        //                   ignore-modifiers = it survives through a held
+        //                   home-row mod (tap Shift, hold Cmd, tap T).
+        //   tap, tap     -> Caps Word. The second tap sees Shift active from
+        //                   the first (sticky) tap, so the mod-morph picks
+        //                   &caps_word instead of a second sticky Shift.
+        //                   Ends on any key that isn't alpha/number or in
+        //                   continue-list (so SOME_CONSTANT and backspace
+        //                   corrections don't break it).
+        // Either overlapping or not overlapping Shift with the letter yields
+        // a capital, so there is no timing to get right.
+        skq: sticky_key_quick_release {
+            compatible = "zmk,behavior-sticky-key";
+            #binding-cells = <1>;
+            bindings = <&kp>;
+            release-after-ms = <1000>;
+            quick-release;
+            ignore-modifiers;
+        };
+        caps_word_u: caps_word_underscore {
+            compatible = "zmk,behavior-caps-word";
+            #binding-cells = <0>;
+            continue-list = <UNDERSCORE MINUS BACKSPACE DELETE>;
+        };
+        smart_shft: smart_shift {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&skq LSHFT>, <&caps_word_u>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sshft: smart_shift_hold_tap {   // invoked as `&sshft LSHFT 0`
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "hold-preferred";
+            tapping-term-ms = <200>;
+            quick-tap-ms = <175>;
+            bindings = <&kp>, <&smart_shft>;
         };
 
         // Swapper (QMK SW_APP / SW_WIN port) via the tri-state module.
@@ -201,12 +251,12 @@
 // ------------------------------------------------------------------------------------------
 // | ESC  |  Q  |  W  |  F  |  P  | B/CFG|   |  J  |  L  |  U  |  Y  |  ;  | BSPC |
 // | TAB  | A/G | R/A | S/S | T/C |  G   |   |  M  | N/C | E/S | I/A | O/G |  '   |
-// | SHFT |  Z  |  X  |  C  |  D  |  V   |   |  K  |  H  |  ,  |  .  |  /  | SHFT |
+// |SSHFT|  Z  |  X  |  C  |  D  |  V   |   |  K  |  H  |  ,  |  .  |  /  |SSHFT|
 //                    | GUI |NAV/⌫|NUM/␣ |   |MED/⏎|SYM  |MOU/⇥|
             bindings = <
    &kp ESC    &kp Q       &kp W       &kp F       &kp P       &lt CONF B     &kp J     &kp L          &kp U       &kp Y       &kp SEMI    &kp BSPC
    &kp TAB    &hml LGUI A &hml LALT R &hml LSFT S &hml LCTRL T &kp G         &kp M     &hmr RCTRL N   &hmr RSFT E &hmr LALT I &hmr RGUI O &kp SQT
-   &kp LSHFT  &kp Z       &kp X       &kp C       &kp D       &kp V          &kp K     &kp H          &kp COMMA   &kp DOT     &kp FSLH    &kp RSHFT
+   &sshft LSHFT 0 &kp Z       &kp X       &kp C       &kp D       &kp V          &kp K     &kp H          &kp COMMA   &kp DOT     &kp FSLH    &sshft LSHFT 0
                                       &kp LGUI    &lt NAV BSPC &lt NUM SPACE  &lt MEDIA RET &mo SYM    &lt MOUSE TAB
             >;
         };
@@ -216,11 +266,11 @@
 // ------------------------------------------------------------------------------------------
 // | ESC  |  Q  |  W  |  E  |  R  | T/CFG|   |  Y  |  U  |  I  |  O  |  P  | BSPC |
 // | TAB  | A/G | S/A | D/S | F/C |  G   |   |  H  | J/C | K/S | L/A | ;/G |  '   |
-// | SHFT |  Z  |  X  |  C  |  V  |  B   |   |  N  |  M  |  ,  |  .  |  /  | SHFT |
+// |SSHFT|  Z  |  X  |  C  |  V  |  B   |   |  N  |  M  |  ,  |  .  |  /  |SSHFT|
             bindings = <
    &kp ESC    &kp Q       &kp W       &kp E       &kp R       &lt CONF T     &kp Y     &kp U          &kp I       &kp O       &kp P        &kp BSPC
    &kp TAB    &hml LGUI A &hml LALT S &hml LSFT D &hml LCTRL F &kp G         &kp H     &hmr RCTRL J   &hmr RSFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
-   &kp LSHFT  &kp Z       &kp X       &kp C       &kp V       &kp B          &kp N     &kp M          &kp COMMA   &kp DOT     &kp FSLH     &kp RSHFT
+   &sshft LSHFT 0 &kp Z       &kp X       &kp C       &kp V       &kp B          &kp N     &kp M          &kp COMMA   &kp DOT     &kp FSLH     &sshft LSHFT 0
                                       &kp LGUI    &lt NAV BSPC &lt NUM SPACE  &lt MEDIA RET &mo SYM    &lt MOUSE TAB
             >;
         };
