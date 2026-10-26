@@ -278,15 +278,17 @@
         number_layer {
             display-name = "NUMBER";
 // Auto-shift on the right cluster: tap = number/symbol, HOLD = shifted form.
+// Left inner column: C-B = tmux prefix (prefix + window number without leaving
+// the layer); G-\ = Cmd+\ as one key (otherwise a three-finger chord).
 // ------------------------------------------------------------------------------------------
 // |SW_WIN|     |     |     |     |LOGOUT|   | [/{ | 7/& | 8/* | 9/( | ]/} | BSPC |
-// |SW_APP| GUI | ALT | SFT | CTL |      |   | ;/: | 4/$ | 5/% | 6/^ | =/+ |  '   |
-// |      |     |     |     |     |      |   |  ~  | 1/! | 2/@ | 3/# | \/| | SHFT |
+// |SW_APP| GUI | ALT | SFT | CTL | C-B  |   | ;/: | 4/$ | 5/% | 6/^ | =/+ |  '   |
+// |      |     |     |     |     | G-\  |   |  ~  | 1/! | 2/@ | 3/# | \/| | SHFT |
 //                    |     |     |      |   | 0/) | -/_ | ./> |
             bindings = <
    &swap_win     &none    &none    &none    &none     &kp LG(LC(Q))   &as LBRC LBKT  &as AMPS N7  &as ASTRK N8 &as LPAR N9  &as RBRC RBKT &trans
-   &swap_app     &kp LGUI &kp LALT &kp LSHFT &kp LCTRL &none           &as COLON SEMI &as DLLR N4  &as PRCNT N5 &as CARET N6 &as PLUS EQUAL &trans
-   &trans        &none    &none    &none    &none     &none           &kp TILDE      &as EXCL N1  &as AT N2    &as HASH N3  &as PIPE BSLH &trans
+   &swap_app     &kp LGUI &kp LALT &kp LSHFT &kp LCTRL &kp LC(B)       &as COLON SEMI &as DLLR N4  &as PRCNT N5 &as CARET N6 &as PLUS EQUAL &trans
+   &trans        &none    &none    &none    &none     &kp LG(BSLH)    &kp TILDE      &as EXCL N1  &as AT N2    &as HASH N3  &as PIPE BSLH &trans
                                    &trans   &trans    &trans          &as RPAR N0    &as UNDER MINUS &as GT DOT
             >;
         };
